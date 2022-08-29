@@ -1,0 +1,57 @@
+minio:
+  endpoint: 172.30.34.113:9000
+  accessKeyID: admin
+  secretAccessKey: adminadmin
+  bucket: filebase
+
+mysql-write: root:cW8yzyWj4UD@tcp(172.30.36.184:3306)/weiling_digital_engineering
+write_table: file_base_info_60a0d6daca0b131d
+
+#mysql-read: weiling_digital_engineering:HL70l$vy@tcp(gz-cdb-b1zi0dmr.sql.tencentcdb.com:58030)/weiling_digital_engineering
+mysql-read: root:cW8yzyWj4UD@tcp(172.30.36.184:3306)/weiling_digital_engineering
+read-table: org_detail_fb9b5f126b8314d5
+read-url: attachment_url
+read-fileName: attachment_name
+read-startID: none
+
+#compatMode: true
+compatMode: true
+read_bizID: id
+read_bizType: 1481462103894106114
+
+chan_num: 5
+batch_insert: 10
+fix: false
+
+ip_address: 172.30.34.9:8088
+
+
+
+minio:
+  endpoint: 172.30.34.113:9000
+  accessKeyID: admin
+  secretAccessKey: adminadmin
+  bucket: filebase
+
+mysql-write: root:cW8yzyWj4UD@tcp(172.30.36.184:3306)/weiling_digital_engineering
+write_table: file_base_info_60a0d6daca0b131d
+
+#mysql-read: weiling_digital_engineering:HL70l$vy@tcp(gz-cdb-b1zi0dmr.sql.tencentcdb.com:58030)/weiling_digital_engineering
+mysql-read: root:cW8yzyWj4UD@tcp(172.30.36.184:3306)/weiling_digital_engineering
+read-table: org_detail_history_fb9b5f126b8314d5
+read-url: attachment_url
+read-fileName: attachment_name
+read-startID: none
+
+#compatMode: true
+compatMode: true
+read_bizID: org_detail_id
+read_bizType: 1481462103894106114
+
+chan_num: 5
+batch_insert: 10
+fix: false
+
+ip_address: 172.30.34.9:8088
+
+
