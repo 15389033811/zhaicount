@@ -48,6 +48,8 @@ public class TbZhaiInfo implements Serializable {
 
     private Double balance;
 
+    private String guCode;
+
     public Integer getId() {
         return id;
     }
@@ -55,6 +57,7 @@ public class TbZhaiInfo implements Serializable {
     public void setId(Integer id) {
         this.id = id;
     }
+
     public String getName() {
         return name;
     }
@@ -62,6 +65,7 @@ public class TbZhaiInfo implements Serializable {
     public void setName(String name) {
         this.name = name;
     }
+
     public String getGuName() {
         return guName;
     }
@@ -69,6 +73,15 @@ public class TbZhaiInfo implements Serializable {
     public void setGuName(String guName) {
         this.guName = guName;
     }
+
+    public String getGuCode() {
+        return guCode;
+    }
+
+    public void setGuCode(String guCode) {
+        this.guCode = guCode;
+    }
+
     public String getType() {
         return type;
     }
@@ -76,6 +89,7 @@ public class TbZhaiInfo implements Serializable {
     public void setType(String type) {
         this.type = type;
     }
+
     public String getMarket() {
         return market;
     }
@@ -83,6 +97,7 @@ public class TbZhaiInfo implements Serializable {
     public void setMarket(String market) {
         this.market = market;
     }
+
     public Double getPremiumRatio() {
         return premiumRatio;
     }
@@ -90,6 +105,7 @@ public class TbZhaiInfo implements Serializable {
     public void setPremiumRatio(Double premiumRatio) {
         this.premiumRatio = premiumRatio;
     }
+
     public String getListingData() {
         return listingData;
     }
@@ -97,6 +113,7 @@ public class TbZhaiInfo implements Serializable {
     public void setListingData(String listingData) {
         this.listingData = listingData;
     }
+
     public String getCode() {
         return code;
     }
@@ -104,6 +121,7 @@ public class TbZhaiInfo implements Serializable {
     public void setCode(String code) {
         this.code = code;
     }
+
     public Double getUpRate() {
         return upRate;
     }
@@ -111,6 +129,7 @@ public class TbZhaiInfo implements Serializable {
     public void setUpRate(Double upRate) {
         this.upRate = upRate;
     }
+
     public Double getBalance() {
         return balance;
     }
@@ -122,16 +141,16 @@ public class TbZhaiInfo implements Serializable {
     @Override
     public String toString() {
         return "TbZhaiInfo{" +
-            "id=" + id +
-            ", name=" + name +
-            ", guName=" + guName +
-            ", type=" + type +
-            ", market=" + market +
-            ", premiumRatio=" + premiumRatio +
-            ", listingData=" + listingData +
-            ", code=" + code +
-            ", upRate=" + upRate +
-            ", balance=" + balance +
-        "}";
+                "id=" + id +
+                ", name=" + name +
+                ", guName=" + guName +
+                ", type=" + type +
+                ", market=" + market +
+                ", premiumRatio=" + premiumRatio +
+                ", listingData=" + listingData +
+                ", code=" + code +
+                ", upRate=" + upRate +
+                ", balance=" + balance +
+                "}";
     }
 }

@@ -24,6 +24,7 @@ import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.tomcat.jni.Time;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,6 +39,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootTest
 class ZhaicountApplicationTests {
@@ -47,8 +49,9 @@ class ZhaicountApplicationTests {
     static String detailCodeUrl = "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_F10_CORETHEME_CONTENT&columns=MAINPOINT_CONTENT&filter=";
 
     @Test
-    void contextLoads() throws IOException {
-
+    void contextLoads() throws Exception {
+        Map<String, TbZhaiInfo> extendMapInfo = getexeclInfo();
+        // Map<String, String> typeMap = getTypeInfo();
         Integer pageNumber = 1;
         String zhaiListUrl = "https://datacenter-web.eastmoney.com/api/data/v1/get?sortColumns=PUBLIC_START_DATE&sortTypes=-1&pageSize=100&pageNumber="
                 + pageNumber
@@ -69,14 +72,21 @@ class ZhaicountApplicationTests {
             String queryCode = "";
             for (ZhaiResp.Result.Datum zhaiRespItem : zhaiResp.getResult().getData()) {
                 try {
+                    // Thread.sleep(3000);
                     queryCode = zhaiRespItem.getConvertStockCode();
                     TbZhaiInfo tbZhaiInfo = new TbZhaiInfo();
                     tbZhaiInfo.setName(zhaiRespItem.getSecurityNameAbbr());
                     tbZhaiInfo.setGuName(zhaiRespItem.getSecurityShortName());
-                    tbZhaiInfo.setType(getType(queryCode));
+                    // tbZhaiInfo.setType(typeMap.get(queryCode));
+                    // tbZhaiInfo.setType(getType(zhaiRespItem.getSecucode()));
+                    tbZhaiInfo.setGuCode(zhaiRespItem.getConvertStockCode());
                     tbZhaiInfo.setCode(zhaiRespItem.getSecurityCode());
                     tbZhaiInfo.setPremiumRatio(zhaiRespItem.getTransferPremiumRatio());
                     tbZhaiInfo.setListingData(zhaiRespItem.getListingDate());
+                    if (extendMapInfo.containsKey(tbZhaiInfo.getCode())) {
+                        tbZhaiInfo.setBalance(extendMapInfo.get(tbZhaiInfo.getCode()).getBalance());
+                        tbZhaiInfo.setUpRate(extendMapInfo.get(tbZhaiInfo.getCode()).getUpRate());
+                    }
                     if (zhaiRespItem.getSecucode().indexOf(".SH") != -1) {
                         tbZhaiInfo.setMarket("沪");
                     } else {
@@ -88,9 +98,7 @@ class ZhaicountApplicationTests {
                 }
             }
         }
-
         // System.out.println(zhaiResp);
-
     }
 
     @Test
@@ -116,67 +124,117 @@ class ZhaicountApplicationTests {
         return reultNum / 100000000;
     }
 
-    String getType(String guCode) throws IOException {
+    String getType(String guCode) {
         JsonObject jsonObject = null;
         try {
+            System.out.println(guCode);
             OkHttpClient client = new OkHttpClient().newBuilder()
                     .build();
-            MediaType mediaType = MediaType.parse("text/plain");
-            RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
-                    .addFormDataPart("query", "所属概念")
-                    .addFormDataPart("question", guCode)
-                    .addFormDataPart("perpage", "1")
-                    .addFormDataPart("condition",
-                            "[{\"indexName\":\"所属概念\",\"indexProperties\":[],\"source\":\"new_parser\",\"type\":\"index\",\"indexPropertiesMap\":{},\"reportType\":\"null\",\"chunkedResult\":\"所属概念\",\"valueType\":\"_所属概念\",\"domain\":\"abs_股票领域\",\"uiText\":\"所属概念\",\"sonSize\":0,\"queryText\":\"所属概念\",\"relatedSize\":0,\"tag\":\"所属概念\"}]")
-                    .addFormDataPart("query_type", "stock")
-                    .addFormDataPart("comp_id", "6257151")
-                    .addFormDataPart("source", "Ths_iwencai_Xuangu")
-                    .addFormDataPart("uuid", "24087")
-                    .addFormDataPart("sort_key", "最新涨跌幅")
-                    .addFormDataPart("sort_order", " desc")
-                    .addFormDataPart("iwc_token", "0ac9667916589336331293513")
-                    .build();
+            MediaType mediaType = MediaType.parse("application/json");
+            RequestBody body = RequestBody.create(mediaType,
+                    "{\r\n    \"question\": \"" + guCode
+                            + "\",\r\n    \"perpage\": \"1\",\r\n    \"page\": 1,\r\n    \"secondary_intent\": \"stock\",\r\n    \"log_info\": \"{\\\"input_type\\\":\\\"click\\\"}\",\r\n    \"source\": \"Ths_iwencai_Xuangu\",\r\n    \"version\": \"2.0\",\r\n    \"query_area\": \"\",\r\n    \"block_list\": \"\",\r\n    \"add_info\": \"{\\\"urp\\\":{\\\"scene\\\":1,\\\"company\\\":1,\\\"business\\\":1},\\\"contentType\\\":\\\"json\\\",\\\"searchInfo\\\":true}\",\r\n    \"rsh\": \"Ths_iwencai_Xuangu_gg9mwx2kqn7vb4uhzq0g2is0ymq3ilwg\"\r\n}");
             Request request = new Request.Builder()
-                    .url("http://www.iwencai.com/unifiedwap/unified-wap/v2/stock-pick/find")
+                    .url("http://www.iwencai.com/customized/chart/get-robot-data")
                     .method("POST", body)
-                    .addHeader("Host", "www.iwencai.com")
                     .addHeader("Origin", "http://www.iwencai.com")
-                    .addHeader("Referer",
-                            "http://www.iwencai.com/unifiedwap/result?w=%E6%89%80%E5%B1%9E%E6%A6%82%E5%BF%B5&querytype=stock")
-                    .addHeader("hexin", "AzRnd5p46oYBAX5KMqIbkoGgBfmjDVj3mjHsO86VwL9COdon9h0oh")
-                    .addHeader("Content-Type", "application/json;charset=utf-8")
+                    .addHeader("Referer", "http://www.iwencai.com/unifiedwap/result?w=300495.SZ%20&querytype=stock")
+                    .addHeader("hexin-v", "AzVm9JPnuvoUNt5GH4UZigI0RLrqsunEs2bNGLda8az7jlskfwL5lEO23e1E")
+                    .addHeader("Content-Type", "application/json")
                     .build();
             Response response = client.newCall(request).execute();
-            jsonObject = new JsonParser().parse(response.body().string()).getAsJsonObject();
-            return jsonObject.get("data").getAsJsonObject().get("data").getAsJsonObject().get("datas").getAsJsonArray()
-                    .get(0).getAsJsonObject().get("所属概念").toString().replaceAll("\"", "");
-
+            String respStr = response.body().string();
+            jsonObject = new JsonParser().parse(respStr).getAsJsonObject();
+            String zhaiTypeStr = jsonObject.get("data").getAsJsonObject().get("answer")
+                    .getAsJsonArray().get(0).getAsJsonObject().get("txt").getAsJsonArray().get(0)
+                    .getAsJsonObject().get("content").getAsJsonObject().get("components")
+                    .getAsJsonArray().get(0).getAsJsonObject().get("data").getAsJsonArray().get(0)
+                    .getAsJsonObject().get("所属概念").getAsString();
+            System.out.println(zhaiTypeStr);
+            return zhaiTypeStr;
         } catch (Exception e) {
-            e.printStackTrace();
             System.out.println(jsonObject.toString());
             return "";
         }
     }
 
-    @Test
-    void getexeclInfo() throws Exception {
+    Map<String, String> getTypeInfo() throws Exception {
         Integer page = 1;
         JsonObject jsonObject = null;
-        HashMap<String, TbZhaiInfo> mapInfo = new HashMap<>();
-        for (page = 1; page <= 6; page++) {
+        HashMap<String, String> mapInfo = new HashMap<>();
+        for (page = 1; page <= 50; page++) {
+
+            Thread.sleep(5000);
             OkHttpClient client = new OkHttpClient().newBuilder()
                     .build();
             MediaType mediaType = MediaType.parse("application/json");
             RequestBody body = RequestBody.create(mediaType,
-                    "{\r\n    \"question\": \"可转债\",\r\n    \"perpage\": 100,\r\n    \"page\": " + page
+                    "{\r\n    \"question\": \"所属概念\",\r\n    \"perpage\": 100,\r\n    \"page\": " + page
+                            + ",\r\n    \"secondary_intent\": \"stock\",\r\n    \"log_info\": \"{\\\"input_type\\\":\\\"click\\\"}\",\r\n    \"source\": \"Ths_iwencai_Xuangu\",\r\n    \"version\": \"2.0\",\r\n    \"query_area\": \"\",\r\n    \"block_list\": \"\",\r\n    \"add_info\": \"{\\\"urp\\\":{\\\"scene\\\":1,\\\"company\\\":1,\\\"business\\\":1},\\\"contentType\\\":\\\"json\\\",\\\"searchInfo\\\":true}\",\r\n    \"rsh\": \"Ths_iwencai_Xuangu_gg9mwx2kqn7vb4uhzq0g2is0ymq3ilwg\"\r\n}");
+            Request request = new Request.Builder()
+                    .url("http://www.iwencai.com/customized/chart/get-robot-data")
+                    .method("POST", body)
+                    .addHeader("Origin", "http://www.iwencai.com")
+                    .addHeader("Referer",
+                            "http://www.iwencai.com/unifiedwap/result?w=%E6%89%80%E5%B1%9E%E6%A6%82%E5%BF%B5&querytype=stock")
+                    .addHeader("Cookie",
+                            "ta_random_userid=fpk9l3fjna; WafStatus=0; cid=7d2495c2cac32ab307c01fdbcecf02cd1656166981; ComputerID=7d2495c2cac32ab307c01fdbcecf02cd1656166981; other_uid=Ths_iwencai_Xuangu_gg9mwx2kqn7vb4uhzq0g2is0ymq3ilwg; PHPSESSID=4f4f92ebe29c21cc4e9cdb87aec3b6e5; iwencaisearchquery=%E5%8F%AF%E4%BA%A4%E6%98%93%E7%9A%84%E5%8F%AF%E8%BD%AC%E5%80%BA; wencai_pc_version=1; v=Aw5dwcx64XczQlVTTzPS15UBX-_Vj9KJ5FOGbThXepHMm6BRoB8imbTj1ngL")
+                    .addHeader("hexin", "Aw5dwcx64XczQlVTTzPS15UBX-_Vj9KJ5FOGbThXepHMm6BRoB8imbTj1ngL")
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
+            Response response = client.newCall(request).execute();
+            String respStr = response.body().string();
+            try {
+                jsonObject = new JsonParser().parse(respStr).getAsJsonObject();
+            } catch (Exception e) {
+                System.out.println("------" + page);
+                System.out.println(e.toString());
+                System.out.println(respStr);
+                page--;
+                continue;
+            }
+            JsonArray zhaiJsonList = jsonObject.get("data").getAsJsonObject().get("answer")
+                    .getAsJsonArray().get(0).getAsJsonObject().get("txt").getAsJsonArray().get(0)
+                    .getAsJsonObject().get("content").getAsJsonObject().get("components")
+                    .getAsJsonArray().get(0).getAsJsonObject().get("data").getAsJsonObject().get("datas")
+                    .getAsJsonArray();
+            for (JsonElement jsonElement : zhaiJsonList) {
+                if (jsonElement.getAsJsonObject().get("code") == null
+                        || jsonElement.getAsJsonObject().get("所属概念") == null) {
+                    continue;
+                }
+                System.out.println(jsonElement.getAsJsonObject().get("code").getAsString());
+                System.out.println(jsonElement.getAsJsonObject().get("所属概念").getAsString());
+                mapInfo.put(jsonElement.getAsJsonObject().get("code").getAsString(),
+                        jsonElement.getAsJsonObject().get("所属概念").getAsString());
+            }
+        }
+        System.out.println(mapInfo.size());
+        return mapInfo;
+    }
+
+    Map<String, TbZhaiInfo> getexeclInfo() throws Exception {
+        Integer page = 1;
+        JsonObject jsonObject = null;
+        HashMap<String, TbZhaiInfo> mapInfo = new HashMap<>();
+        for (page = 1; page <= 5; page++) {
+            Thread.sleep(2000);
+            OkHttpClient client = new OkHttpClient().newBuilder()
+                    .build();
+            MediaType mediaType = MediaType.parse("application/json");
+            RequestBody body = RequestBody.create(mediaType,
+                    "{\r\n    \"question\": \"可交易的可转债\",\r\n    \"perpage\": 200,\r\n    \"page\": " + page
                             + ",\r\n    \"secondary_intent\": \"conbond\",\r\n    \"log_info\": \"{\\\"input_type\\\":\\\"typewrite\\\"}\",\r\n    \"source\": \"Ths_iwencai_Xuangu\",\r\n    \"version\": \"2.0\",\r\n    \"query_area\": \"\",\r\n    \"block_list\": \"\",\r\n    \"add_info\": \"{\\\"urp\\\":{\\\"scene\\\":1,\\\"company\\\":1,\\\"business\\\":1},\\\"contentType\\\":\\\"json\\\",\\\"searchInfo\\\":true}\",\r\n    \"rsh\": \"Ths_iwencai_Xuangu_gg9mwx2kqn7vb4uhzq0g2is0ymq3ilwg\"\r\n}");
             Request request = new Request.Builder()
                     .url("http://www.iwencai.com/customized/chart/get-robot-data")
                     .method("POST", body)
                     .addHeader("Origin", "http://www.iwencai.com")
                     .addHeader("Referer",
-                            "http://www.iwencai.com/unifiedwap/result?w=%E5%8F%AF%E8%BD%AC%E5%80%BA&querytype=conbond&addSign=1661787010195")
-                    .addHeader("hexin-v", "A3wvnxLgMwOFmQff3W9AgZMbTRErdSO2oho0Y1bzi15KPhIPfoXwL_IpBOWl")
+                            "http://www.iwencai.com/unifiedwap/result?w=%E5%8F%AF%E4%BA%A4%E6%98%93%E7%9A%84%E5%8F%AF%E8%BD%AC%E5%80%BA&querytype=conbond")
+                    .addHeader("Cookie",
+                            "ta_random_userid=fpk9l3fjna; WafStatus=0; cid=7d2495c2cac32ab307c01fdbcecf02cd1656166981; ComputerID=7d2495c2cac32ab307c01fdbcecf02cd1656166981; other_uid=Ths_iwencai_Xuangu_gg9mwx2kqn7vb4uhzq0g2is0ymq3ilwg; PHPSESSID=4f4f92ebe29c21cc4e9cdb87aec3b6e5; iwencaisearchquery=%E5%8F%AF%E4%BA%A4%E6%98%93%E7%9A%84%E5%8F%AF%E8%BD%AC%E5%80%BA; wencai_pc_version=1; v=A5XG1HPHWtJYW34mxhq56qIUpJpKkl1bE1It5BcbUUhbeLvE3-JZdKOWPf6k")
+                    .addHeader("hexin", "A5XG1HPHWtJYW34mxhq56qIUpJpKkl1bE1It5BcbUUhbeLvE3-JZdKOWPf6k")
                     .addHeader("Content-Type", "application/json")
                     .build();
             Response response = client.newCall(request).execute();
@@ -196,21 +254,33 @@ class ZhaicountApplicationTests {
             for (JsonElement jsonElement : zhaiJsonList) {
                 TbZhaiInfo tbZhaiInfo = new TbZhaiInfo();
                 System.out.println("-------" + page);
+                if (jsonElement.getAsJsonObject().get("code") == null) {
+                    continue;
+                }
                 System.out.println(jsonElement.getAsJsonObject().get("code").getAsString());
                 // System.out.println(jsonElement.getAsJsonObject());
                 // jsonElement.getAsJsonObject().get("code").getAsString();
-                tbZhaiInfo.setBalance(
-                        jsonElement.getAsJsonObject().get("可转债@最新变动后余额[20220830]").getAsDouble() / Math.pow(1,
-                                8));
-                System.out.println(tbZhaiInfo.getBalance());
-                tbZhaiInfo.setUpRate(jsonElement.getAsJsonObject().get("可转债@涨跌幅[20220830]").getAsDouble());
-                System.out.println(tbZhaiInfo.getUpRate());
-
+                if (jsonElement.getAsJsonObject().get("可转债@最新变动后余额[20220831]") != null) {
+                    tbZhaiInfo.setBalance(
+                            jsonElement.getAsJsonObject().get("可转债@最新变动后余额[20220831]").getAsDouble() / Math.pow(10,
+                                    8));
+                    System.out.println(tbZhaiInfo.getBalance());
+                } else {
+                    tbZhaiInfo.setBalance(0D);
+                }
+                if (jsonElement.getAsJsonObject().get("可转债@涨跌幅[20220831]") != null) {
+                    tbZhaiInfo.setUpRate(jsonElement.getAsJsonObject().get("可转债@涨跌幅[20220831]").getAsDouble());
+                    System.out.println(tbZhaiInfo.getUpRate());
+                } else {
+                    tbZhaiInfo.setUpRate(0D);
+                }
                 mapInfo.put(jsonElement.getAsJsonObject().get("code").getAsString(),
                         tbZhaiInfo);
             }
 
         }
+        System.out.println(mapInfo.size());
+        return mapInfo;
     }
 
     @Test
