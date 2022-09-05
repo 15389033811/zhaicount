@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.zhaicount.dao.TbZhaiInfoMapper;
 import com.example.zhaicount.dto.GuResp;
 import com.example.zhaicount.dto.YeResp;
+import org.assertj.core.data.MapEntry;
 import org.springframework.web.server.WebFilter;
 import com.example.zhaicount.dto.ZhaiResp;
 import com.example.zhaicount.entity.TbZhaiInfo;
@@ -38,7 +39,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +53,9 @@ class ZhaicountApplicationTests {
     TbZhaiInfoMapper tbZhaiInfoMapper;
 
     static String detailCodeUrl = "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_F10_CORETHEME_CONTENT&columns=MAINPOINT_CONTENT&filter=";
+
+    static String hexin = "A9-ZSzbOwIOgYMSfwuKuDs54aDhsRBM3TZA3wnEtebDVIPEmeRTDNl1oxwiC";
+
 
     @Test
     void contextLoads() throws Exception {
@@ -105,27 +111,36 @@ class ZhaicountApplicationTests {
     }
 
     @Test
-    Double getYuE(String zhaiCode) throws UnsupportedEncodingException {
-        String yeUrl = "https://datacenter-web.eastmoney.com/api/data/v1/get?columns=ALL&sortColumns=date&sortTypes=2&source=WEB&reportName=RPTA_WEB_KZZ_LS&pageNumber=1&pageSize=1&filter=(";
-        yeUrl += URLEncoder.encode("zcode=\"" + zhaiCode + "\"", "utf-8") + ")";
-        String resp = HttpRequest.get(yeUrl).body();
-        YeResp yeResp = JSON.parseObject(resp, YeResp.class);
-        if (yeResp.getResult() == null) {
-            return -1D;
+    void updateYue() throws Exception {
+        Map<String, TbZhaiInfo> extendMapInfo = getexeclInfo();
+        for (Map.Entry<String, TbZhaiInfo> entry : extendMapInfo.entrySet()) {
+            tbZhaiInfoMapper.update(entry.getValue(), new LambdaQueryWrapper<TbZhaiInfo>().eq(TbZhaiInfo::getCode,entry.getKey()));
         }
-        Integer pageEnd = yeResp.getResult().getPages();
-        yeUrl = "https://datacenter-web.eastmoney.com/api/data/v1/get?columns=ALL&sortColumns=date&sortTypes=2&source=WEB&reportName=RPTA_WEB_KZZ_LS&pageNumber="
-                + pageEnd + "&pageSize=1&filter=(";
-        yeUrl += URLEncoder.encode("zcode=\"" + zhaiCode + "\"", "utf-8") + ")";
-        resp = HttpRequest.get(yeUrl).body();
-        yeResp = JSON.parseObject(resp, YeResp.class);
-        Double reultNum = yeResp.getResult().getData().get(0).getSYFE();
-
-        if (reultNum == null) {
-            return -1D;
-        }
-        return reultNum / 100000000;
     }
+
+//
+//    @Test
+//    Double getYuE(String zhaiCode) throws UnsupportedEncodingException {
+//        String yeUrl = "https://datacenter-web.eastmoney.com/api/data/v1/get?columns=ALL&sortColumns=date&sortTypes=2&source=WEB&reportName=RPTA_WEB_KZZ_LS&pageNumber=1&pageSize=1&filter=(";
+//        yeUrl += URLEncoder.encode("zcode=\"" + zhaiCode + "\"", "utf-8") + ")";
+//        String resp = HttpRequest.get(yeUrl).body();
+//        YeResp yeResp = JSON.parseObject(resp, YeResp.class);
+//        if (yeResp.getResult() == null) {
+//            return -1D;
+//        }
+//        Integer pageEnd = yeResp.getResult().getPages();
+//        yeUrl = "https://datacenter-web.eastmoney.com/api/data/v1/get?columns=ALL&sortColumns=date&sortTypes=2&source=WEB&reportName=RPTA_WEB_KZZ_LS&pageNumber="
+//                + pageEnd + "&pageSize=1&filter=(";
+//        yeUrl += URLEncoder.encode("zcode=\"" + zhaiCode + "\"", "utf-8") + ")";
+//        resp = HttpRequest.get(yeUrl).body();
+//        yeResp = JSON.parseObject(resp, YeResp.class);
+//        Double reultNum = yeResp.getResult().getData().get(0).getSYFE();
+//
+//        if (reultNum == null) {
+//            return -1D;
+//        }
+//        return reultNum / 100000000;
+//    }
 
     @Test
     void setType(){
@@ -151,6 +166,7 @@ class ZhaicountApplicationTests {
     void setType1() throws IOException {
         JsonObject jsonObject = null;
         List<TbZhaiInfo> tbZhaiInfoList = tbZhaiInfoMapper.selectList(new LambdaQueryWrapper<TbZhaiInfo>().isNull(TbZhaiInfo::getType).or().eq(TbZhaiInfo::getType, ""));
+//        List<TbZhaiInfo> tbZhaiInfoList = tbZhaiInfoMapper.selectList(new LambdaQueryWrapper<TbZhaiInfo>());
         String x = "";
         int num = 1;
         for (TbZhaiInfo tbZhaiInfo :
@@ -159,49 +175,58 @@ class ZhaicountApplicationTests {
                 x += tbZhaiInfo.getGuCode() + ",";
                 num++;
             } else {
-                x = x.substring(0, x.length() - 1);
-                System.out.println("成功拼接"+x);
-                OkHttpClient client = new OkHttpClient().newBuilder()
-                        .build();
-                MediaType mediaType = MediaType.parse("application/json");
-                RequestBody body = RequestBody.create(mediaType, "{\n    \"question\": \"" + x + "\",\n    \"perpage\": 50,\n    \"page\": 1,\n    \"secondary_intent\": \"stock\",\n    \"log_info\": \"{\\\"input_type\\\":\\\"typewrite\\\"}\",\n    \"source\": \"Ths_iwencai_Xuangu\",\n    \"version\": \"2.0\",\n    \"query_area\": \"\",\n    \"block_list\": \"\",\n    \"add_info\": \"{\\\"urp\\\":{\\\"scene\\\":1,\\\"company\\\":1,\\\"business\\\":1},\\\"contentType\\\":\\\"json\\\",\\\"searchInfo\\\":true}\",\n    \"rsh\": \"594794277\"\n}");
-                Request request = new Request.Builder()
-                        .url("http://www.iwencai.com/customized/chart/get-robot-data")
-                        .method("POST", body)
-                        .addHeader("Origin", "http://www.iwencai.com")
-                        .addHeader("Referer", "http://www.iwencai.com/unifiedwap/result?w=603609&querytype=stock&addSign=1661932545444")
-                        .addHeader("hexin-v", "A4vNdwrqbF04RLAJ2ueSShoEHCRwIJnEGTZjVv2IZaAhAqXahfAv8ikE87EO")
-                        .addHeader("Content-Type", "application/json")
-                        .build();
-                Response response = client.newCall(request).execute();
-                String respStr = response.body().string();
-                jsonObject = new JsonParser().parse(respStr).getAsJsonObject();
-                JsonObject zhaiTypeStr = jsonObject.get("data").getAsJsonObject().get("answer")
-                        .getAsJsonArray().get(0).getAsJsonObject().get("txt").getAsJsonArray().get(0)
-                        .getAsJsonObject().get("content").getAsJsonObject().get("components")
-                        .getAsJsonArray().get(0).getAsJsonObject().get("data").getAsJsonObject();
-                Set<String> zhaiKeySet = zhaiTypeStr.keySet();
-                for (String zhaiKey :
-                        zhaiKeySet) {
-                    System.out.println(zhaiKey);
-                    if (zhaiTypeStr.get(zhaiKey).getAsJsonArray().get(0).getAsJsonObject().get("股票代码") == null
-                            ||zhaiTypeStr.get(zhaiKey).getAsJsonArray().get(0).getAsJsonObject().get("所属概念") ==null){
-                        continue;
-                    }
-
-                    String gucode = zhaiTypeStr.get(zhaiKey).getAsJsonArray().get(0).getAsJsonObject().get("股票代码").getAsString();
-                    System.out.println("股票代码"+gucode.split("\\.")[0]);
-
-                    String type = zhaiTypeStr.get(zhaiKey).getAsJsonArray().get(0).getAsJsonObject().get("所属概念").getAsString();
-                    TbZhaiInfo tb = new TbZhaiInfo();
-                    tb.setType(type);
-
-                    tbZhaiInfoMapper.update(tb, new LambdaQueryWrapper<TbZhaiInfo>().eq(TbZhaiInfo::getGuCode, gucode.split("\\.")[0]));
-                }
-
-                x = "";
+                updateTypeStrs(x);
             }
         }
+        updateTypeStrs(x);
+    }
+
+    void updateTypeStrs(String x) throws IOException {
+        JsonObject jsonObject = null;
+        x = x.substring(0, x.length() - 1);
+        if (x.length()==0){
+            return;
+        }
+        System.out.println("成功拼接"+x);
+        OkHttpClient client = new OkHttpClient().newBuilder()
+                .build();
+        MediaType mediaType = MediaType.parse("application/json");
+        RequestBody body = RequestBody.create(mediaType, "{\n    \"question\": \"" + x + "\",\n    \"perpage\": 50,\n    \"page\": 1,\n    \"secondary_intent\": \"stock\",\n    \"log_info\": \"{\\\"input_type\\\":\\\"typewrite\\\"}\",\n    \"source\": \"Ths_iwencai_Xuangu\",\n    \"version\": \"2.0\",\n    \"query_area\": \"\",\n    \"block_list\": \"\",\n    \"add_info\": \"{\\\"urp\\\":{\\\"scene\\\":1,\\\"company\\\":1,\\\"business\\\":1},\\\"contentType\\\":\\\"json\\\",\\\"searchInfo\\\":true}\",\n    \"rsh\": \"594794277\"\n}");
+        Request request = new Request.Builder()
+                .url("http://www.iwencai.com/customized/chart/get-robot-data")
+                .method("POST", body)
+                .addHeader("Origin", "http://www.iwencai.com")
+                .addHeader("Referer", "http://www.iwencai.com/unifiedwap/result?w=603609&querytype=stock&addSign=1661932545444")
+                .addHeader("hexin-v", hexin)
+                .addHeader("Content-Type", "application/json")
+                .build();
+        Response response = client.newCall(request).execute();
+        String respStr = response.body().string();
+        jsonObject = new JsonParser().parse(respStr).getAsJsonObject();
+        JsonObject zhaiTypeStr = jsonObject.get("data").getAsJsonObject().get("answer")
+                .getAsJsonArray().get(0).getAsJsonObject().get("txt").getAsJsonArray().get(0)
+                .getAsJsonObject().get("content").getAsJsonObject().get("components")
+                .getAsJsonArray().get(0).getAsJsonObject().get("data").getAsJsonObject();
+        Set<String> zhaiKeySet = zhaiTypeStr.keySet();
+        for (String zhaiKey :
+                zhaiKeySet) {
+            System.out.println(zhaiKey);
+            if (zhaiTypeStr.get(zhaiKey).getAsJsonArray().get(0).getAsJsonObject().get("股票代码") == null
+                    ||zhaiTypeStr.get(zhaiKey).getAsJsonArray().get(0).getAsJsonObject().get("所属概念") ==null){
+                continue;
+            }
+
+            String gucode = zhaiTypeStr.get(zhaiKey).getAsJsonArray().get(0).getAsJsonObject().get("股票代码").getAsString();
+            System.out.println("股票代码"+gucode.split("\\.")[0]);
+
+            String type = zhaiTypeStr.get(zhaiKey).getAsJsonArray().get(0).getAsJsonObject().get("所属概念").getAsString();
+            TbZhaiInfo tb = new TbZhaiInfo();
+            tb.setType(type);
+
+            tbZhaiInfoMapper.update(tb, new LambdaQueryWrapper<TbZhaiInfo>().eq(TbZhaiInfo::getGuCode, gucode.split("\\.")[0]));
+        }
+
+        x = "";
     }
 
     String getType(String guCode) {
@@ -217,7 +242,7 @@ class ZhaicountApplicationTests {
                     .method("POST", body)
                     .addHeader("Origin", "http://www.iwencai.com")
                     .addHeader("Referer", "http://www.iwencai.com/unifiedwap/result?w=603609&querytype=stock&addSign=1661932545444")
-                    .addHeader("hexin-v", "A4vNdwrqbF04RLAJ2ueSShoEHCRwIJnEGTZjVv2IZaAhAqXahfAv8ikE87EO")
+                    .addHeader("hexin-v", hexin)
                     .addHeader("Content-Type", "application/json")
                     .build();
             Response response = client.newCall(request).execute();
@@ -294,6 +319,9 @@ class ZhaicountApplicationTests {
     Map<String, TbZhaiInfo> getexeclInfo() throws Exception {
         Integer page = 1;
         JsonObject jsonObject = null;
+        Date date = new Date();
+        SimpleDateFormat dateFormat= new SimpleDateFormat("yyyyMMdd");
+        String dateNow = dateFormat.format(date);
         HashMap<String, TbZhaiInfo> mapInfo = new HashMap<>();
         for (page = 1; page <= 5; page++) {
             Thread.sleep(2000);
@@ -308,10 +336,12 @@ class ZhaicountApplicationTests {
                     .method("POST", body)
                     .addHeader("Origin", "http://www.iwencai.com")
                     .addHeader("Referer",
-                            "http://www.iwencai.com/unifiedwap/result?w=%E5%8F%AF%E4%BA%A4%E6%98%93%E7%9A%84%E5%8F%AF%E8%BD%AC%E5%80%BA&querytype=conbond")
+                            "http://www.iwencai.com/unifiedwap/result?w=%E5%8F%AF%E8%BD%AC%E5%80%BA")
                     .addHeader("Cookie",
-                            "ta_random_userid=85efgq659g; WafStatus=0; cid=7e00e64ca6d16c0ffb8a6ae1ea46f9a11656567343; ComputerID=7e00e64ca6d16c0ffb8a6ae1ea46f9a11656567343; other_uid=Ths_iwencai_Xuangu_i6p20lcvh2prip3pq4ll6vnnquib0pfd; guideState=1; PHPSESSID=830e72cfcb976304c2db5d9d3c49a2af; user=MDpteF81OTQ3OTQyNzc6Ok5vbmU6NTAwOjYwNDc5NDI3Nzo3LDExMTExMTExMTExLDQwOzQ0LDExLDQwOzYsMSw0MDs1LDEsNDA7MSwxMDEsNDA7MiwxLDQwOzMsMSw0MDs1LDEsNDA7OCwwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMSw0MDsxMDIsMSw0MDoxNjo6OjU5NDc5NDI3NzoxNjYxNzQxNDA3Ojo6MTYyOTE2Mjc4MDoyMjczOTM6MDoxYzdjNDlmN2QxNjYxYjg0YzUyMGY2NDgxZGIxM2NmMTU6ZGVmYXVsdF80OjA%3D; userid=594794277; u_name=mx_594794277; escapename=mx_594794277; ticket=6dbdce6c48dcfeb15d1a08ccb4ae58f4; user_status=0; utk=d53efec832bb8c71c2a3c09ce17dc2f3; wencai_pc_version=1; v=A0EHFaSkxp6xyiqrE5toSBxyVoZebrFU3-tZdKOXPuSnlm_4677FMG8yaQ8w")
-                    .addHeader("hexin", "A0EHFaSkxp6xyiqrE5toSBxyVoZebrFU3-tZdKOXPuSnlm_4677FMG8yaQ8w")
+                            "ta_random_userid=85efgq659g; WafStatus=0; cid=7e00e64ca6d16c0ffb8a6ae1ea46f9a11656567343; " +
+                                    "ComputerID=7e00e64ca6d16c0ffb8a6ae1ea46f9a11656567343; other_uid=Ths_iwencai_Xuangu_i6p20lcvh2prip3pq4ll6vnnquib0pfd; guideState=1;" +
+                                    " PHPSESSID=93c54aa461e0042ca0abbd311483333e; wencai_pc_version=1; v=A2IkcJuZdajVj2n0fIp79buntePBs2OIGLVa8az7jFmB7wxdlEO23ehHqg1_")
+                    .addHeader("hexin", "A2IkcJuZdajVj2n0fIp79buntePBs2OIGLVa8az7jFmB7wxdlEO23ehHqg1_")
                     .addHeader("Content-Type", "application/json")
                     .build();
             Response response = client.newCall(request).execute();
@@ -337,16 +367,16 @@ class ZhaicountApplicationTests {
                 System.out.println(jsonElement.getAsJsonObject().get("code").getAsString());
                 // System.out.println(jsonElement.getAsJsonObject());
                 // jsonElement.getAsJsonObject().get("code").getAsString();
-                if (jsonElement.getAsJsonObject().get("可转债@最新变动后余额[20220831]") != null) {
+                if (jsonElement.getAsJsonObject().get("可转债@最新变动后余额["+dateNow+"]") != null) {
                     tbZhaiInfo.setBalance(
-                            jsonElement.getAsJsonObject().get("可转债@最新变动后余额[20220831]").getAsDouble() / Math.pow(10,
+                            jsonElement.getAsJsonObject().get("可转债@最新变动后余额["+dateNow+"]").getAsDouble() / Math.pow(10,
                                     8));
                     System.out.println(tbZhaiInfo.getBalance());
                 } else {
                     tbZhaiInfo.setBalance(0D);
                 }
-                if (jsonElement.getAsJsonObject().get("可转债@涨跌幅[20220831]") != null) {
-                    tbZhaiInfo.setUpRate(jsonElement.getAsJsonObject().get("可转债@涨跌幅[20220831]").getAsDouble());
+                if (jsonElement.getAsJsonObject().get("可转债@涨跌幅["+dateNow+"]") != null) {
+                    tbZhaiInfo.setUpRate(jsonElement.getAsJsonObject().get("可转债@涨跌幅["+dateNow+"]").getAsDouble());
                     System.out.println(tbZhaiInfo.getUpRate());
                 } else {
                     tbZhaiInfo.setUpRate(0D);
@@ -358,78 +388,6 @@ class ZhaicountApplicationTests {
         }
         System.out.println(mapInfo.size());
         return mapInfo;
-    }
-
-    @Test
-    void parseExcel() throws Exception {
-        // 1、获取文件的路径
-        // 1.1、从桌面获取文件
-        FileSystemView fsv = FileSystemView.getFileSystemView();
-        String filePath = "/Users/nut/code/java/zhaicount/2022-07-28 (1).xls";
-        // 1.2、从绝对路径获取文件
-        // String filePath = "D:\\testexcel.xls";
-
-        // 2、通过流获取本地文件
-        FileInputStream fileInputStream = new FileInputStream(filePath);
-        BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
-        POIFSFileSystem fileSystem = new POIFSFileSystem(bufferedInputStream);
-
-        // 3、创建工作簿对象，并获取工作表1
-        HSSFWorkbook workbook = new HSSFWorkbook(fileSystem);
-        HSSFSheet sheet = workbook.getSheet("1");
-
-        // 4、从工作表中获取行数，并遍历
-        int lastRowIndex = sheet.getLastRowNum();
-        System.out.println("总行数为：" + lastRowIndex);
-        ArrayList<HashMap> list = new ArrayList<>();
-        for (int i = 1; i <= lastRowIndex; i++) {
-            // 4.1 获取每行的数据
-            HSSFRow row = sheet.getRow(i);
-            if (row == null) {
-                break;
-            }
-
-            row.getCell(0).setCellType(Cell.CELL_TYPE_STRING);
-            String zhaiCode = row.getCell(0).getStringCellValue();
-            if (zhaiCode.indexOf(".") == -1) {
-                continue;
-            }
-            String zhaiStr = zhaiCode.substring(0, zhaiCode.indexOf("."));
-
-            TbZhaiInfo tbZhaiInfo = tbZhaiInfoMapper
-                    .selectOne(new LambdaQueryWrapper<TbZhaiInfo>().eq(TbZhaiInfo::getCode, zhaiStr).last("limit 1"));
-            if (tbZhaiInfo == null) {
-                continue;
-            }
-            // 更新增长率
-            row.getCell(3).setCellType(Cell.CELL_TYPE_STRING);
-            String ratio = row.getCell(3).getStringCellValue();
-            if (ratio.equals("--")) {
-                tbZhaiInfo.setUpRate(-1000D);
-            } else {
-                tbZhaiInfo.setUpRate(Double.parseDouble(row.getCell(3).getStringCellValue()));
-            }
-
-            // 更新余额
-            row.getCell(16).setCellType(Cell.CELL_TYPE_STRING);
-            String balance = row.getCell(16).getStringCellValue();
-
-            if (balance.indexOf("亿") != -1) {
-                tbZhaiInfo.setBalance(Double.parseDouble(balance.substring(0, balance.indexOf("亿"))));
-            } else if (balance.indexOf("万") != -1) {
-                tbZhaiInfo.setBalance(
-                        Double.parseDouble(balance.substring(0, balance.indexOf("万")).replaceAll(",", "")) * 0.0001);
-            } else {
-                tbZhaiInfo.setBalance(0D);
-            }
-
-            tbZhaiInfoMapper.updateById(tbZhaiInfo);
-        }
-
-        // 6、关闭资源、输出封装数据
-        bufferedInputStream.close();
-        System.out.println(list.toString());
-
     }
 
 }
